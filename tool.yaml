@@ -1,0 +1,12 @@
+tools:
+  retriever:
+    name: document_retriever
+    description: Retrieves relevant chunks from vector store
+
+embedding:
+  model: mxbai-embed-large:latest
+  provider: ollama
+
+chunking:
+  chunk_size: 700
+  chunk_overlap: 100

@@ -1,0 +1,25 @@
+llm:
+  provider: ollama
+  model: qwen3:8b
+  temperature: 0.0
+
+retrieval:
+  k: 4
+
+prompt:
+  system: |
+    You are a helpful AI assistant.
+    Use ONLY the provided context to answer the question.
+    If unsure, say you don't know.
+
+    Always cite sources in this format:
+    [source: <metadata.source>]
+
+  user: |
+    Context:
+    {context}
+
+    Question:
+    {question}
+
+    Answer:

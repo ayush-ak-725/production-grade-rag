@@ -1,0 +1,10 @@
+# IntelliJ IDEA
+.idea/
+
+# Python virtual environment
+.venv/
+
+production-grade-rag.iml
+__pycache__/
+.DS_Store
+chroma_db/
