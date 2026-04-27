@@ -2,6 +2,12 @@ tools:
   retriever:
     name: document_retriever
     description: Retrieves relevant chunks from vector store
+    vector_k: 15
+    bm25_k: 6
+  reranker:
+    name: relevance_reranker
+    description: Reranks retrieved chunks based on relevance to the query
+    top_k: 6
 
 embedding:
   model: mxbai-embed-large:latest

@@ -6,7 +6,7 @@ class Reranker:
         # Lightweight + strong model
         self.model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
 
-    def rerank(self, query, docs, top_k=5):
+    def rerank(self, query, docs, top_k=6):
         pairs = [(query, doc.page_content) for doc in docs]
 
         scores = self.model.predict(pairs)

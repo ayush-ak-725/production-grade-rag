@@ -43,7 +43,8 @@ class RAGPipeline:
         docs = self.retriever.retrieve(question)
 
         # Step 2: Rerank
-        docs = self.reranker.rerank(question, docs)
+        top_k = load_yaml("tool.yaml")['tools']['reranker']['top_k']
+        docs = self.reranker.rerank(question, docs, top_k)
 
         # Step 3: Citation enforcement
         if not self.is_answerable(docs):

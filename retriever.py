@@ -18,11 +18,11 @@ class HybridRetriever:
         )
 
         self.vector_retriever = self.vectorstore.as_retriever(
-            search_kwargs={"k": 6}
+            search_kwargs={"k": tool_config['tools']['retriever']['vector_k']}
         )
 
         self.bm25_retriever = BM25Retriever.from_documents(docs)
-        self.bm25_retriever.k = 6
+        self.bm25_retriever.k = tool_config['tools']['retriever']['bm25_k']
 
     def retrieve(self, query):
         vector_docs = self.vector_retriever.invoke(query)
