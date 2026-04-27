@@ -10,3 +10,6 @@ pypdf
 beautifulsoup4
 requests
 tiktoken
+langfuse
+sentence-transformers
+rank_bm25

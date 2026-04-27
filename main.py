@@ -1,7 +1,8 @@
-from rag_chain import query_rag
+from rag_pipeline import RAGPipeline
 
 if __name__ == "__main__":
+    rag = RAGPipeline()
+
     while True:
-        query = input("\n💬 Ask your question: ")
-        answer = query_rag(query)
-        print("\n🤖 Answer:\n", answer)
+        q = input("\n💬 Ask: ")
+        print("\n🤖 Answer:\n", rag.query(q))
