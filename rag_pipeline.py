@@ -1,10 +1,17 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
+from langfuse import Langfuse
 
 from retriever import HybridRetriever
 from reranker import Reranker
 from config_loader import load_yaml
 from ingest import load_documents
+
+# Initialize Langfuse
+langfuse = Langfuse()
 
 
 class RAGPipeline:
@@ -35,28 +42,100 @@ class RAGPipeline:
         return context
 
     def is_answerable(self, docs):
-        # 🔥 Simple grounding check
         return len(docs) > 0
 
     def query(self, question: str):
-        # Step 1: Hybrid retrieval
+        trace = langfuse.trace(
+            name="rag_pipeline",
+            input={"question": question}
+        )
+
+        # -------------------------
+        # Step 1: Retrieval
+        # -------------------------
+        span = trace.span(name="retrieval")
+
         docs = self.retriever.retrieve(question)
 
-        # Step 2: Rerank
-        top_k = load_yaml("tool.yaml")['tools']['reranker']['top_k']
-        docs = self.reranker.rerank(question, docs, top_k)
+        span.update(output={
+            "num_docs": len(docs),
+            "docs": [
+                {
+                    "content": doc.page_content,
+                    "source": doc.metadata.get("source")
+                }
+                for doc in docs
+            ]
+        })
+        span.end()
 
-        # Step 3: Citation enforcement
+        # -------------------------
+        # Step 2: Rerank
+        # -------------------------
+        top_k = load_yaml("tool.yaml")['tools']['reranker']['top_k']
+
+        span = trace.span(name="reranking")
+
+        docs, scores = self.reranker.rerank(
+            question, docs, top_k, return_scores=True
+        )
+
+        span.update(output={
+            "scores": scores.tolist(),
+            "docs": [
+                {
+                    "content": doc.page_content,
+                    "source": doc.metadata.get("source")
+                }
+                for doc in docs
+            ]
+        })
+        span.end()
+
+        # -------------------------
+        # Step 3: Grounding check
+        # -------------------------
         if not self.is_answerable(docs):
+            trace.update(output={"answer": "Not answerable"})
             return "I don't have enough information to answer that."
 
         context = self.format_context(docs)
 
+        # -------------------------
+        # Step 4: Prompt
+        # -------------------------
+        span = trace.span(name="prompt")
+
+        span.update(output={
+            "context": context,
+            "question": question
+        })
+        span.end()
+
         chain = self.prompt | self.llm
+
+        # -------------------------
+        # Step 5: LLM
+        # -------------------------
+        span = trace.span(name="llm_call")
 
         response = chain.invoke({
             "context": context,
             "question": question
         })
+
+        span.update(output={"response": response})
+        span.end()
+
+        # -------------------------
+        # Final trace
+        # -------------------------
+        trace.update(
+            output={"final_answer": response},
+            metadata={
+                "top_k": top_k,
+                "model": self.llm.model
+            }
+        )
 
         return response
