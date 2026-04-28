@@ -101,8 +101,8 @@ def ingest(data_path="data", urls=None):
     logger.info("🔪 Starting document chunking")
 
     from transformers import AutoTokenizer
-    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
-
+    # tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen3-8B")
     splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
         tokenizer=tokenizer,
         chunk_size=tool_config["chunking"]["chunk_size"],

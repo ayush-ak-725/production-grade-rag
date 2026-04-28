@@ -7,6 +7,7 @@ from langfuse import Langfuse
 
 from retriever import HybridRetriever
 from reranker import Reranker
+from evaluation import extract_claims, score_claims, compute_coverage
 from config_loader import load_yaml
 from ingest import load_documents
 
@@ -128,6 +129,50 @@ class RAGPipeline:
         span.end()
 
         # -------------------------
+        # Step 6: Evaluation (NEW 🔥)
+        # -------------------------
+        eval_span = trace.span(name="evaluation")
+
+        claims = extract_claims(response)
+        claim_scores = score_claims(claims, docs, self.reranker)
+
+        coverage_metrics = compute_coverage(claim_scores)
+
+        # Faithfulness proxy (max support score across claims)
+        faithfulness_score = max(
+            [c["max_score"] for c in claim_scores],
+            default=-999
+        )
+
+        print("\n" + "="*50)
+        print("📊 RAG EVALUATION")
+        print("="*50)
+
+        print(f"\n✅ Coverage: {coverage_metrics['coverage']:.2f} "
+              f"({coverage_metrics['supported']}/{coverage_metrics['total']})")
+
+        print(f"📈 Faithfulness Score: {faithfulness_score:.3f}")
+
+        print("\n🧠 Claims:")
+        for i, c in enumerate(claims, 1):
+            print(f"{i}. {c}")
+
+        print("\n🔍 Claim Support Scores:")
+        for i, cs in enumerate(claim_scores, 1):
+            print(f"{i}. {cs['max_score']:.3f} → {cs['claim']}")
+
+        print("="*50 + "\n")
+
+        eval_span.update(output={
+            "claims": claims,
+            "claim_scores": claim_scores,
+            "coverage": coverage_metrics,
+            "faithfulness_score": faithfulness_score
+        })
+        eval_span.end()
+
+
+# -------------------------
         # Final trace
         # -------------------------
         trace.update(

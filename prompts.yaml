@@ -6,6 +6,7 @@ rag_prompt:
 
     Rules:
     - Use ONLY the provided context
+    - Do not add external knowledge.
     - If answer is not explicitly supported, say:
       "I don't have enough information to answer that."
     - NEVER hallucinate
