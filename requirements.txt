@@ -13,3 +13,4 @@ tiktoken
 langfuse
 sentence-transformers
 rank_bm25
+llmlingua

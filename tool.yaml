@@ -7,7 +7,7 @@ tools:
   reranker:
     name: relevance_reranker
     description: Reranks retrieved chunks based on relevance to the query
-    top_k: 4
+    top_k: 16
 
 embedding:
   model: mxbai-embed-large:latest

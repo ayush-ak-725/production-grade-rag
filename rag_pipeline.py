@@ -10,6 +10,8 @@ from reranker import Reranker
 from evaluation import extract_claims, score_claims, compute_coverage
 from config_loader import load_yaml
 from ingest import load_documents
+from llmlingua import PromptCompressor
+import tiktoken
 
 # Initialize Langfuse
 langfuse = Langfuse()
@@ -19,7 +21,11 @@ class RAGPipeline:
     def __init__(self):
         agent_config = load_yaml("agent.yaml")
         prompt_config = load_yaml("prompts.yaml")
-
+        self.compressor = PromptCompressor(
+            model_name="microsoft/llmlingua-2-bert-base-multilingual-cased-meetingbank",
+            use_llmlingua2=True,
+            device_map="mps"
+        )
         self.llm = OllamaLLM(
             model=agent_config["llm"]["model"],
             temperature=0.0
@@ -35,6 +41,55 @@ class RAGPipeline:
 
         self.retriever = HybridRetriever(docs)
         self.reranker = Reranker()
+        # 1. Initialize the tokenizer here
+        self.tokenizer = tiktoken.get_encoding("cl100k_base")
+
+    def count_tokens(self, text: str) -> int:
+        return len(self.tokenizer.encode(text))
+
+    def remove_redundancy(self, docs, threshold=0.85):
+        """Lexical redundancy check with detailed logging."""
+        unique_docs = []
+        seen_contents = []
+
+        print(f"\n🔄  REDUNDANCY CHECK (Threshold: {threshold})")
+        initial_count = len(docs)
+
+        for i, doc in enumerate(docs):
+            is_redundant = False
+            content_a = doc.page_content.lower()
+            set_a = set(content_a.split())
+
+            for j, seen in enumerate(seen_contents):
+                set_b = set(seen.split())
+                intersection = set_a.intersection(set_b)
+                overlap = len(intersection) / max(len(set_a), len(set_b))
+
+                if overlap > threshold:
+                    is_redundant = True
+                    source_a = doc.metadata.get('source', 'Unknown')
+                    print(f"   ❌ Dropping doc {i} (from {source_a}) - {overlap*100:.1f}% overlap with unique doc {j}")
+                    break
+
+            if not is_redundant:
+                unique_docs.append(doc)
+                seen_contents.append(content_a)
+
+        removed = initial_count - len(unique_docs)
+        print(f"✅  Redundancy Filter Complete: {len(unique_docs)} unique docs kept, {removed} removed.")
+        return unique_docs
+
+    def compress_with_lingua(self, question, context):
+        """Uses LLMLingua-2 to remove low-information tokens."""
+        # LLMLingua-2 uses a much simpler argument set
+        compressed_prompt = self.compressor.compress_prompt(
+            context,
+            question=question,
+            rate=0.4,              # Target compression rate (e.g., keep 40% of tokens)
+            force_tokens=['\n'],   # Ensure newlines aren't stripped to keep source citations clear
+            drop_consecutive=True
+        )
+        return compressed_prompt["compressed_prompt"]
 
     def format_context(self, docs):
         context = ""
@@ -93,6 +148,43 @@ class RAGPipeline:
         })
         span.end()
 
+        # ... (Step 1: Retrieval & Step 2: Rerank) ...
+
+        # -------------------------
+        # Step 2.5: Context Compression (NEW 🔥)
+        # -------------------------
+        comp_span = trace.span(name="context_compression")
+
+        # 1. Redundancy Filter
+        initial_count = len(docs)
+        docs = self.remove_redundancy(docs)
+
+        # 2. Format for Lingua
+        # Initial State
+        raw_context = self.format_context(docs)
+        tokens_before = self.count_tokens(raw_context)
+
+        # 3. LLMLingua Compression
+        compressed_context = self.compress_with_lingua(question, raw_context)
+        # Final State
+        tokens_after = self.count_tokens(compressed_context)
+        compression_ratio = (1 - (tokens_after / tokens_before)) * 100
+
+        print(f"\n✂️  CONTEXT COMPRESSION REPORT")
+        print(f"Tokens Before: {tokens_before}")
+        print(f"Tokens After:  {tokens_after}")
+        print(f"Reduction:     {compression_ratio:.1f}%")
+
+        comp_span.update(output={
+            "original_doc_count": initial_count,
+            "final_doc_count": len(docs),
+            "tokens_before": tokens_before,
+            "tokens_after": tokens_after,
+            "reduction_percentage": compression_ratio,
+            "compressed_context": compressed_context
+        })
+        comp_span.end()
+
         # -------------------------
         # Step 3: Grounding check
         # -------------------------
@@ -121,7 +213,7 @@ class RAGPipeline:
         span = trace.span(name="llm_call")
 
         response = chain.invoke({
-            "context": context,
+            "context": compressed_context,
             "question": question
         })
 
@@ -182,5 +274,7 @@ class RAGPipeline:
                 "model": self.llm.model
             }
         )
+        import re
+        clean_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
 
-        return response
+        return clean_response
