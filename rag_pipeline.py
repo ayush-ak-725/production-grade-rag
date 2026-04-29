@@ -1,3 +1,5 @@
+import time
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -11,7 +13,9 @@ from evaluation import extract_claims, score_claims, compute_coverage
 from config_loader import load_yaml
 from ingest import load_documents
 from llmlingua import PromptCompressor
+from sarvamai import SarvamAI
 import tiktoken
+import re
 
 # Initialize Langfuse
 langfuse = Langfuse()
@@ -43,6 +47,10 @@ class RAGPipeline:
         self.reranker = Reranker()
         # 1. Initialize the tokenizer here
         self.tokenizer = tiktoken.get_encoding("cl100k_base")
+
+        self.client = SarvamAI(
+            api_subscription_key="sk_nz0ueg9r_dNXbKDtPJ1NJCtpOruyJsY4j",
+        )
 
     def count_tokens(self, text: str) -> int:
         return len(self.tokenizer.encode(text))
@@ -99,6 +107,41 @@ class RAGPipeline:
 
     def is_answerable(self, docs):
         return len(docs) > 0
+
+    def speak_response(self, text, output_file="tts/voice_response/response.wav"):
+        """
+        Cleans RAG text for natural speech and converts to voice.
+        """
+        # 1. Remove the "Citations" / "References" block at the end
+        # This splits the text at the word 'Citations' and takes only the first part
+        clean_text = re.split(r'\n\**Citations\**:', text, flags=re.IGNORECASE)[0]
+        clean_text = re.split(r'\n\**References\**:', clean_text, flags=re.IGNORECASE)[0]
+
+        # 2. Remove inline citations like (Author, 2021) or (Author et al., 2018)
+        # Pattern: Look for '(' followed by text and a 4-digit year, ending with ')'
+        clean_text = re.sub(r'\([^)]*\d{4}[^)]*\)', '', clean_text)
+
+        # 3. Final Polish: Remove markdown bolding (**), bullet points (*), and extra whitespace
+        clean_text = clean_text.replace("**", "").replace("*", "")
+        clean_text = re.sub(r'\s+', ' ', clean_text).strip()
+
+        print(f"🎙️ Cleaned for Voice: {clean_text[:100]}...")
+
+        # --- Sarvam Streaming Logic ---
+        chunks = []
+        for chunk in self.client.text_to_speech.convert_stream(
+                text=clean_text,
+                target_language_code="en-IN",
+                model="bulbul:v3",
+                speaker="shubh"
+        ):
+            chunks.append(chunk)
+
+        audio = b"".join(chunks)
+        with open(output_file, "wb") as f:
+            f.write(audio)
+
+        return output_file
 
     def query(self, question: str):
         trace = langfuse.trace(
@@ -274,7 +317,6 @@ class RAGPipeline:
                 "model": self.llm.model
             }
         )
-        import re
         clean_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
 
         return clean_response
