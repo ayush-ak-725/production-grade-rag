@@ -1,0 +1,62 @@
+[
+  {
+    "question": "What is metformin and how is it related to anti-aging?",
+    "ground_truth": "Metformin is an antidiabetic drug that functions as a caloric restriction mimetic. It activates AMPK, improves insulin sensitivity, and reduces oxidative stress, which contributes to delaying age-related diseases and potentially extending lifespan."
+  },
+  {
+    "question": "How does resveratrol contribute to longevity?",
+    "ground_truth": "Resveratrol contributes to longevity by activating SIRT1 and AMPK pathways. These pathways enhance mitochondrial function, promote autophagy, and help reduce oxidative stress, thereby slowing aging processes."
+  },
+  {
+    "question": "What are rapalogs and why are they used in anti-aging research?",
+    "ground_truth": "Rapalogs are compounds derived from rapamycin that inhibit the mTOR pathway. They are used in anti-aging research because mTOR inhibition promotes autophagy and has been shown to extend lifespan in model organisms."
+  },
+  {
+    "question": "What is spermidine and how does it affect aging?",
+    "ground_truth": "Spermidine is a naturally occurring polyamine that induces autophagy. It supports cellular repair processes and has been associated with improved longevity and reduced risk of age-related diseases."
+  },
+  {
+    "question": "What is autophagy and why is it important for aging?",
+    "ground_truth": "Autophagy is a cellular process that removes damaged proteins and organelles. It is important for aging because it maintains cellular health, prevents accumulation of damage, and supports longevity."
+  },
+  {
+    "question": "What role does AMPK play in anti-aging?",
+    "ground_truth": "AMPK is an energy-sensing enzyme that regulates cellular metabolism. It promotes longevity by enhancing autophagy, improving mitochondrial function, and reducing oxidative stress."
+  },
+  {
+    "question": "What are senolytics and how do they work?",
+    "ground_truth": "Senolytics are drugs that selectively eliminate senescent cells, which accumulate with age and contribute to inflammation and tissue dysfunction. Removing these cells helps improve tissue function and delay aging-related diseases."
+  },
+  {
+    "question": "What are the main challenges in anti-aging research?",
+    "ground_truth": "Major challenges include the complexity of aging mechanisms, variability among individuals, ethical concerns, high costs of clinical trials, and lack of long-term human data."
+  },
+  {
+    "question": "How does exercise influence aging?",
+    "ground_truth": "Exercise improves mitochondrial function, reduces oxidative stress, enhances cardiovascular health, and helps maintain muscle mass, all of which contribute to healthier aging."
+  },
+  {
+    "question": "What is the relationship between oxidative stress and aging?",
+    "ground_truth": "Oxidative stress results from an imbalance between free radicals and antioxidants, leading to cellular damage. This damage accumulates over time and contributes to aging and age-related diseases."
+  },
+  {
+    "question": "What is the role of SIRT1 in aging?",
+    "ground_truth": "SIRT1 is a protein involved in cellular regulation that promotes longevity by improving mitochondrial function, enhancing DNA repair, and reducing inflammation."
+  },
+  {
+    "question": "How does caloric restriction affect aging?",
+    "ground_truth": "Caloric restriction slows aging by reducing metabolic stress, improving insulin sensitivity, activating longevity pathways like AMPK and SIRT1, and promoting autophagy."
+  },
+  {
+    "question": "What diseases are associated with aging?",
+    "ground_truth": "Aging is associated with diseases such as cardiovascular disease, diabetes, neurodegenerative disorders, and cancer."
+  },
+  {
+    "question": "What are the limitations of current anti-aging therapies?",
+    "ground_truth": "Limitations include insufficient human clinical evidence, potential side effects, high costs, and uncertainty about long-term safety and effectiveness."
+  },
+  {
+    "question": "Does the document claim that aging can be completely reversed?",
+    "ground_truth": "No, the document does not claim that aging can be completely reversed. It focuses on slowing aging processes and improving healthspan rather than achieving full reversal."
+  }
+]
