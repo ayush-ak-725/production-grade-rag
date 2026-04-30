@@ -32,7 +32,8 @@ class RAGPipeline:
         )
         self.llm = OllamaLLM(
             model=agent_config["llm"]["model"],
-            temperature=0.0
+            temperature=0.0,
+            num_ctx=8192,
         )
 
         self.prompt = ChatPromptTemplate.from_messages([
