@@ -256,12 +256,30 @@ class RAGPipeline:
         # -------------------------
         span = trace.span(name="llm_call")
 
-        response = chain.invoke({
+        # response = chain.invoke({
+        #     "context": compressed_context,
+        #     "question": question
+        # })
+
+        full_response = ""
+        print(f"\n🤖 LLM Response: ", end="", flush=True)
+
+        # Start streaming
+        for chunk in chain.stream({
             "context": compressed_context,
             "question": question
-        })
+        }):
+            # 1. Capture the chunk
+            full_response += chunk
+            # 2. Print to console immediately for better UX
+            print(chunk, end="", flush=True)
 
-        span.update(output={"response": response})
+            # Optional: You can yield chunk here if you want to use this in a web UI
+            # yield chunk
+
+        print("\n") # New line after stream ends
+
+        span.update(output={"response": full_response})
         span.end()
 
         # -------------------------
@@ -269,7 +287,7 @@ class RAGPipeline:
         # -------------------------
         eval_span = trace.span(name="evaluation")
 
-        claims = extract_claims(response)
+        claims = extract_claims(full_response)
         claim_scores = score_claims(claims, docs, self.reranker)
 
         coverage_metrics = compute_coverage(claim_scores)
@@ -312,12 +330,12 @@ class RAGPipeline:
         # Final trace
         # -------------------------
         trace.update(
-            output={"final_answer": response},
+            output={"final_answer": full_response},
             metadata={
                 "top_k": top_k,
                 "model": self.llm.model
             }
         )
-        clean_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL).strip()
+        clean_response = re.sub(r'<think>.*?</think>', '', full_response, flags=re.DOTALL).strip()
 
         return clean_response
